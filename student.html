@@ -65,6 +65,71 @@
     gap: 14px;
   }
 
+  /* Custom Modal Overlay (Replaces native alert & confirm) */
+  .custom-modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.65);
+    backdrop-filter: blur(5px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 999;
+    padding: 20px;
+  }
+  .custom-modal-box {
+    background: var(--card);
+    border-radius: 24px;
+    padding: 28px 22px;
+    max-width: 380px;
+    width: 100%;
+    text-align: center;
+    box-shadow: 0 20px 45px rgba(15, 23, 42, 0.25);
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    animation: bounceIn 0.28s ease-out;
+  }
+  .modal-icon {
+    font-size: 3.2rem;
+    line-height: 1;
+  }
+  .modal-title {
+    font-size: 1.35rem;
+    font-weight: 900;
+    color: var(--text);
+  }
+  .modal-desc {
+    font-size: 0.98rem;
+    color: var(--muted);
+    line-height: 1.45;
+  }
+  .modal-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 6px;
+  }
+  .modal-actions button {
+    flex: 1;
+    padding: 14px 12px;
+    font-size: 1rem;
+  }
+  .btn-modal-cancel {
+    background: #f1f5f9;
+    color: var(--text);
+    border: 1px solid var(--border);
+  }
+  .btn-modal-danger {
+    background: var(--danger);
+    color: #fff;
+    box-shadow: 0 4px 12px rgba(225, 29, 72, 0.3);
+  }
+  .btn-modal-primary {
+    background: var(--primary);
+    color: #fff;
+    box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
+  }
+
   /* Join Screen */
   .join-card {
     background: var(--card);
@@ -215,7 +280,7 @@
   }
   input.st-emoji-input {
     flex: 1;
-    min-width: 0; /* Prevents horizontal overflow on mobile */
+    min-width: 0;
     width: 100%;
     background: #f8fafc;
     color: var(--text);
@@ -297,6 +362,31 @@
 </head>
 <body>
 
+<!-- CUSTOM EXIT CONFIRMATION MODAL -->
+<div class="custom-modal-overlay hidden" id="exitConfirmModal">
+  <div class="custom-modal-box">
+    <div class="modal-icon">🚪</div>
+    <div class="modal-title">Keluar dari Room?</div>
+    <div class="modal-desc">Kamu akan keluar dari sesi kelas saat ini. Yakin ingin keluar?</div>
+    <div class="modal-actions">
+      <button class="btn-modal-cancel" onclick="closeExitModal()">Batal</button>
+      <button class="btn-modal-danger" onclick="confirmExitRoom()">Ya, Keluar</button>
+    </div>
+  </div>
+</div>
+
+<!-- CUSTOM DISCONNECTED MODAL -->
+<div class="custom-modal-overlay hidden" id="disconnectModal">
+  <div class="custom-modal-box">
+    <div class="modal-icon">📡</div>
+    <div class="modal-title">Sesi Terputus</div>
+    <div class="modal-desc">Koneksi ke Game Master terputus atau sesi kelas telah berakhir.</div>
+    <div class="modal-actions">
+      <button class="btn-modal-primary" onclick="handleDisconnectAcknowledge()">Kembali ke Lobby</button>
+    </div>
+  </div>
+</div>
+
 <div class="container">
   <!-- 1. JOIN CARD -->
   <div class="join-card" id="joinCard">
@@ -318,7 +408,7 @@
       </div>
       <div class="header-right">
         <div class="anon-pill">🕵️ ANONYMOUS</div>
-        <button class="btn-exit" onclick="exitRoom()">Exit 🚪</button>
+        <button class="btn-exit" onclick="openExitModal()">Exit 🚪</button>
       </div>
     </div>
 
@@ -444,6 +534,7 @@
   let peer = null;
   let hostConn = null;
   let heartbeatTimer = null;
+  let isIntentionalExit = false;
   let myName = "";
   let mySessionId = "";
   let stCurrentQ = 0;
@@ -468,7 +559,6 @@
     osc.stop(now + 0.11);
   }
 
-  // Generate or retrieve persistent Session ID so accidental refresh doesn't create a duplicate player
   function getSessionId() {
     let sid = sessionStorage.getItem('ecp_session_id');
     if (!sid) {
@@ -478,7 +568,6 @@
     return sid;
   }
 
-  // Auto-rejoin if the student accidentally refreshed the page while active
   window.addEventListener('DOMContentLoaded', () => {
     const savedName = sessionStorage.getItem('ecp_student_name');
     if (savedName) {
@@ -495,6 +584,7 @@
       return;
     }
 
+    isIntentionalExit = false;
     mySessionId = getSessionId();
     sessionStorage.setItem('ecp_student_name', myName);
 
@@ -519,7 +609,6 @@
         document.getElementById('gameArea').classList.remove('hidden');
         document.getElementById('stNameDisplay').textContent = myName;
 
-        // Send heartbeat every 2.5s so GM detects immediately if student closes browser
         clearInterval(heartbeatTimer);
         heartbeatTimer = setInterval(() => {
           if (hostConn && hostConn.open) {
@@ -536,7 +625,9 @@
 
       hostConn.on('close', () => {
         clearInterval(heartbeatTimer);
-        alert("Disconnected from Game Master.");
+        if (!isIntentionalExit) {
+          document.getElementById('disconnectModal').classList.remove('hidden');
+        }
       });
     });
 
@@ -547,8 +638,20 @@
     });
   }
 
-  function exitRoom() {
-    if (!confirm("Keluar dari room kelas sekarang?")) return;
+  /* Custom Exit Modal Controls */
+  function openExitModal() {
+    playClickSound();
+    document.getElementById('exitConfirmModal').classList.remove('hidden');
+  }
+
+  function closeExitModal() {
+    playClickSound();
+    document.getElementById('exitConfirmModal').classList.add('hidden');
+  }
+
+  function confirmExitRoom() {
+    isIntentionalExit = true;
+    document.getElementById('exitConfirmModal').classList.add('hidden');
     clearInterval(heartbeatTimer);
     if (hostConn && hostConn.open) {
       hostConn.send({ type: 'LEAVE' });
@@ -556,6 +659,17 @@
         if (peer) peer.destroy();
       }, 150);
     }
+    resetToJoinScreen();
+  }
+
+  /* Custom Disconnect Modal Controls */
+  function handleDisconnectAcknowledge() {
+    document.getElementById('disconnectModal').classList.add('hidden');
+    if (peer) peer.destroy();
+    resetToJoinScreen();
+  }
+
+  function resetToJoinScreen() {
     sessionStorage.removeItem('ecp_student_name');
     sessionStorage.removeItem('ecp_session_id');
     stSubmittedChoice = null;
@@ -565,7 +679,6 @@
     document.getElementById('statusMsg').textContent = "";
   }
 
-  // Notify GM if student closes tab/browser
   window.addEventListener('beforeunload', () => {
     if (hostConn && hostConn.open) {
       hostConn.send({ type: 'LEAVE' });
@@ -657,7 +770,6 @@
 
   function clearEmoji() {
     const inp = document.getElementById('stEmojiInput');
-    // Safely remove the last Unicode emoji character
     const chars = Array.from(inp.value.trim());
     chars.pop();
     inp.value = chars.join("").trim();
