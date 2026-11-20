@@ -61,6 +61,44 @@
     0%, 100% { transform: translateY(0px); }
     50% { transform: translateY(-6px); }
   }
+  @keyframes slideDown {
+    0% { transform: translateY(-30px); opacity: 0; }
+    100% { transform: translateY(0); opacity: 1; }
+  }
+
+  /* Toast Notification Area */
+  #toastContainer {
+    position: fixed;
+    top: 16px;
+    right: 20px;
+    z-index: 999;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    max-width: 380px;
+    pointer-events: none;
+  }
+  .toast-alert {
+    padding: 14px 18px;
+    border-radius: 14px;
+    font-weight: 800;
+    font-size: 1rem;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.18);
+    animation: slideDown 0.3s ease-out;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .toast-leave {
+    background: #ffe4e6;
+    border: 2px solid #e11d48;
+    color: #9f1239;
+  }
+  .toast-join {
+    background: #d1fae5;
+    border: 2px solid #059669;
+    color: #065f46;
+  }
 
   /* Topbar */
   .gm-topbar {
@@ -358,6 +396,8 @@
 </head>
 <body>
 
+<div id="toastContainer"></div>
+
 <div class="gm-topbar">
   <div class="brand-area">
     <div class="status-dot" id="serverDot"></div>
@@ -367,7 +407,6 @@
     </div>
   </div>
 
-  <!-- Stage tabs stay hidden while in Lobby -->
   <div class="stage-tabs hidden" id="gmStageTabs">
     <button class="tab-btn active" id="tab1" onclick="gmSwitchStage(1)">1. Grammar Crime (10)</button>
     <button class="tab-btn" id="tab2" onclick="gmSwitchStage(2)">2. Fix the Bio</button>
@@ -375,7 +414,7 @@
   </div>
 
   <div class="player-badge">
-    <span id="gmPlayerCount">👥 0 Joined</span>
+    <span id="gmPlayerCount">👥 0 Active</span>
     <button style="background:#fff; color:var(--teal); padding:4px 8px; font-size:0.85rem;" onclick="playPopSound()" title="Test Audio">🔊</button>
   </div>
 </div>
@@ -420,7 +459,7 @@
   </div>
 </div>
 
-<!-- ==================== 2. STAGE 2: FIX THE BIO (ALWAYS ANONYMOUS) ==================== -->
+<!-- ==================== 2. STAGE 2: FIX THE BIO ==================== -->
 <div class="gm-main hidden" id="gmStage2">
   <div class="gm-s1-header">
     <div class="gm-q-title">STAGE 2: FIX THE BIO / CHAT! (Anonymous Revisions)</div>
@@ -440,7 +479,7 @@
   </div>
 </div>
 
-<!-- ==================== 3. STAGE 3: EMOJI STORYTELLER (ANONYMOUS) ==================== -->
+<!-- ==================== 3. STAGE 3: EMOJI STORYTELLER ==================== -->
 <div class="gm-main hidden" id="gmStage3">
   <div class="gm-s1-header">
     <div class="gm-q-title">STAGE 3: MYSTERY EMOJI STORY — Click a card & guess who sent it!</div>
@@ -517,14 +556,14 @@
   ];
 
   let peer = null;
-  let connections = {};
+  let connections = {}; // peerId -> { conn, name, sessionId, lastSeen }
   let gameStarted = false;
   let currentStage = 1;
   let currentQIndex = 0;
   let isQLocked = false;
-  let s1Answers = {};
-  let s2Bios = {};
-  let s3Emojis = {};
+  let s1Answers = {}; // qIndex -> { sessionId: { choice } }
+  let s2Bios = {};    // sessionId -> { text }
+  let s3Emojis = {};  // sessionId -> { emoji }
   let audioCtx = null;
 
   function ensureAudio() {
@@ -548,6 +587,23 @@
     osc.stop(now + 0.13);
   }
 
+  function playAlertSound() {
+    ensureAudio();
+    const now = audioCtx.currentTime;
+    [440, 330].forEach((freq, i) => {
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(freq, now + i * 0.14);
+      gain.gain.setValueAtTime(0.15, now + i * 0.14);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.14 + 0.25);
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.start(now + i * 0.14);
+      osc.stop(now + i * 0.14 + 0.28);
+    });
+  }
+
   function playRevealFanfare() {
     ensureAudio();
     const now = audioCtx.currentTime;
@@ -565,6 +621,39 @@
     });
   }
 
+  function showToast(message, type = 'leave') {
+    const container = document.getElementById('toastContainer');
+    const div = document.createElement('div');
+    div.className = `toast-alert ${type === 'leave' ? 'toast-leave' : 'toast-join'}`;
+    div.textContent = message;
+    container.appendChild(div);
+    setTimeout(() => {
+      div.style.opacity = '0';
+      div.style.transition = 'opacity 0.4s';
+      setTimeout(() => div.remove(), 400);
+    }, 5500);
+  }
+
+  function removeStudentConnection(peerId, reasonText) {
+    const student = connections[peerId];
+    if (!student) return;
+    const studentName = student.name;
+    delete connections[peerId];
+    playAlertSound();
+    showToast(`⚠️ ${studentName} ${reasonText}`, 'leave');
+    updateLobbyAndCounts();
+  }
+
+  // Heartbeat monitor to detect crashed/closed mobile browsers immediately
+  setInterval(() => {
+    const now = Date.now();
+    Object.entries(connections).forEach(([peerId, info]) => {
+      if (now - info.lastSeen > 8000) {
+        removeStudentConnection(peerId, "terputus / refresh HP!");
+      }
+    });
+  }, 3000);
+
   window.addEventListener('DOMContentLoaded', () => {
     peer = new Peer(FIXED_ROOM_ID);
 
@@ -579,41 +668,71 @@
 
     peer.on('connection', (conn) => {
       conn.on('data', (data) => {
-        if (data.type === 'JOIN') {
-          connections[conn.peer] = { conn, name: data.name };
+        if (data.type === 'PING') {
+          if (connections[conn.peer]) {
+            connections[conn.peer].lastSeen = Date.now();
+          }
+        } else if (data.type === 'JOIN') {
+          // If the same student rejoined after refresh, remove their old duplicate socket
+          Object.entries(connections).forEach(([oldPeerId, oldInfo]) => {
+            if (oldInfo.sessionId === data.sessionId && oldPeerId !== conn.peer) {
+              delete connections[oldPeerId];
+            }
+          });
+
+          const isRejoin = data.isRejoin;
+          connections[conn.peer] = {
+            conn,
+            name: data.name,
+            sessionId: data.sessionId,
+            lastSeen: Date.now()
+          };
           playPopSound();
+          if (isRejoin) {
+            showToast(`🔄 ${data.name} masuk kembali ke room!`, 'join');
+          }
           updateLobbyAndCounts();
+
+          const sid = data.sessionId;
           conn.send({
             type: 'SYNC_STATE',
             started: gameStarted,
             stage: currentStage,
             qIndex: currentQIndex,
-            locked: isQLocked
+            locked: isQLocked,
+            savedChoice: (s1Answers[currentQIndex] && s1Answers[currentQIndex][sid]) ? s1Answers[currentQIndex][sid].choice : null
           });
+        } else if (data.type === 'LEAVE') {
+          removeStudentConnection(conn.peer, "keluar dari room (Exit)!");
         } else if (data.type === 'S1_ANSWER') {
-          if (gameStarted && !isQLocked && data.qIndex === currentQIndex) {
+          const info = connections[conn.peer];
+          if (info && gameStarted && !isQLocked && data.qIndex === currentQIndex) {
             if (!s1Answers[currentQIndex]) s1Answers[currentQIndex] = {};
-            if (!s1Answers[currentQIndex][conn.peer]) {
-              // Stored anonymously (no name attached to answer)
-              s1Answers[currentQIndex][conn.peer] = { choice: data.choice };
+            if (!s1Answers[currentQIndex][info.sessionId]) {
+              s1Answers[currentQIndex][info.sessionId] = { choice: data.choice };
               playPopSound();
               gmUpdateS1Counter();
             }
           }
         } else if (data.type === 'S2_BIO') {
-          s2Bios[conn.peer] = { text: data.text };
-          playPopSound();
-          gmRenderBios();
+          const info = connections[conn.peer];
+          if (info) {
+            s2Bios[info.sessionId] = { text: data.text };
+            playPopSound();
+            gmRenderBios();
+          }
         } else if (data.type === 'S3_EMOJI') {
-          s3Emojis[conn.peer] = { emoji: data.emoji };
-          playPopSound();
-          gmRenderEmojis();
+          const info = connections[conn.peer];
+          if (info) {
+            s3Emojis[info.sessionId] = { emoji: data.emoji };
+            playPopSound();
+            gmRenderEmojis();
+          }
         }
       });
 
       conn.on('close', () => {
-        delete connections[conn.peer];
-        updateLobbyAndCounts();
+        removeStudentConnection(conn.peer, "keluar / koneksi terputus!");
       });
     });
   });
@@ -626,9 +745,8 @@
 
   function updateLobbyAndCounts() {
     const list = Object.values(connections);
-    document.getElementById('gmPlayerCount').textContent = `👥 ${list.length} Joined`;
+    document.getElementById('gmPlayerCount').textContent = `👥 ${list.length} Active`;
 
-    // Render Lobby names ONLY while in Lobby
     const lobbyBox = document.getElementById('lobbyPlayersBox');
     if (list.length === 0) {
       lobbyBox.innerHTML = `<div style="color:var(--muted); font-size:1.3rem; font-weight:600;">No students connected yet...</div>`;
@@ -774,7 +892,6 @@
     }
   }
 
-  // Stage 2: Always Anonymous
   function gmRenderBios() {
     const total = Object.keys(connections).length;
     const entries = Object.entries(s2Bios);
@@ -797,8 +914,8 @@
     });
   }
 
-  function spotlightBio(peerId, idx) {
-    const item = s2Bios[peerId];
+  function spotlightBio(sessionId, idx) {
+    const item = s2Bios[sessionId];
     if (!item) return;
     playPopSound();
     document.getElementById('spotlightContent').innerHTML = `
@@ -821,7 +938,6 @@
     document.getElementById('spotlightModal').classList.remove('hidden');
   }
 
-  // Stage 3: Always Anonymous Mystery Emoji
   function gmRenderEmojis() {
     const total = Object.keys(connections).length;
     const entries = Object.entries(s3Emojis);
@@ -842,8 +958,8 @@
     });
   }
 
-  function spotlightEmoji(peerId, idx) {
-    const item = s3Emojis[peerId];
+  function spotlightEmoji(sessionId, idx) {
+    const item = s3Emojis[sessionId];
     if (!item) return;
     playRevealFanfare();
     document.getElementById('spotlightContent').innerHTML = `
