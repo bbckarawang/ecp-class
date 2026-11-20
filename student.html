@@ -40,6 +40,10 @@
     70% { box-shadow: 0 0 0 12px rgba(79, 70, 229, 0); }
     100% { box-shadow: 0 0 0 0 rgba(79, 70, 229, 0); }
   }
+  @keyframes floatWait {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-8px); }
+  }
 
   button {
     cursor: pointer;
@@ -94,11 +98,7 @@
     color: var(--text);
     background: #f8fafc;
   }
-  .join-card input:focus {
-    outline: none;
-    border-color: var(--primary);
-    background: #fff;
-  }
+  .join-card input:focus { outline: none; border-color: var(--primary); background: #fff; }
   .btn-primary {
     background: var(--primary);
     color: #fff;
@@ -125,9 +125,21 @@
     box-shadow: 0 10px 25px rgba(0,0,0,0.06);
     display: flex;
     flex-direction: column;
-    gap: 18px;
+    gap: 16px;
     animation: bounceIn 0.35s ease-out;
   }
+
+  /* Waiting Room Card */
+  .waiting-card {
+    text-align: center;
+    padding: 40px 24px;
+    align-items: center;
+  }
+  .waiting-icon {
+    font-size: 4rem;
+    animation: floatWait 2s ease-in-out infinite;
+  }
+
   .st-word-cloud {
     display: flex;
     flex-wrap: wrap;
@@ -176,28 +188,60 @@
   }
   textarea.st-bio-input:focus { outline: none; border-color: var(--primary); background: #fff; }
 
+  /* WhatsApp-style Emoji Picker */
+  .emoji-display-row {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+  }
   input.st-emoji-input {
-    width: 100%;
+    flex: 1;
     background: #f8fafc;
     color: var(--text);
     border: 2px solid var(--border);
     border-radius: 16px;
-    padding: 18px;
-    font-size: 3.2rem;
+    padding: 14px;
+    font-size: 2.6rem;
     text-align: center;
   }
-  .emoji-quick-bar {
+  .btn-clear-emoji {
+    background: #fee2e2;
+    color: #dc2626;
+    padding: 18px 16px;
+    font-size: 1.2rem;
+    border-radius: 16px;
+  }
+  .emoji-picker-box {
+    background: #f8fafc;
+    border: 2px solid #e2e8f0;
+    border-radius: 16px;
+    padding: 12px;
+    max-height: 220px;
+    overflow-y: auto;
     display: flex;
-    justify-content: center;
+    flex-direction: column;
     gap: 10px;
-    flex-wrap: wrap;
   }
-  .emoji-chip {
-    background: #f1f5f9;
-    font-size: 1.7rem;
-    padding: 8px 12px;
-    border-radius: 12px;
+  .emoji-cat-title {
+    font-size: 0.78rem;
+    font-weight: 800;
+    color: var(--muted);
+    text-transform: uppercase;
+    margin-bottom: 4px;
   }
+  .emoji-grid-picker {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 6px;
+  }
+  .emoji-item-btn {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    font-size: 1.65rem;
+    padding: 6px 0;
+    border-radius: 10px;
+  }
+  .emoji-item-btn:active { background: #e0e7ff; transform: scale(0.9); }
 
   .status-banner {
     background: var(--teal-light);
@@ -225,14 +269,14 @@
 <body>
 
 <div class="container">
-  <!-- 1. DIRECT NAME INPUT (NO ROOM CODE NEEDED) -->
+  <!-- 1. JOIN CARD -->
   <div class="join-card" id="joinCard">
     <div class="badge">ECP Interactive Class</div>
     <div style="font-size: 3.5rem;">🚀</div>
     <h1>"How Have You Changed?"</h1>
-    <p style="color:var(--muted); font-size:1rem;">Enter your name to join the live session directly!</p>
+    <p style="color:var(--muted); font-size:1rem;">Enter your name to join the lobby!</p>
     <input type="text" id="studentNameInput" placeholder="Type your name..." maxlength="20" onkeydown="if(event.key==='Enter') joinClass()">
-    <button class="btn-primary" id="joinBtn" onclick="joinClass()">Join Class Now ▶</button>
+    <button class="btn-primary" id="joinBtn" onclick="joinClass()">Join Lobby ▶</button>
     <div id="statusMsg" style="color:var(--danger); font-weight:700; font-size:0.95rem;"></div>
   </div>
 
@@ -240,16 +284,26 @@
   <div id="gameArea" class="hidden" style="display:flex; flex-direction:column; gap:16px;">
     <div class="st-header">
       <div>
-        <div style="font-size:0.75rem; color:var(--muted); font-weight:700;">PLAYER</div>
+        <div style="font-size:0.75rem; color:var(--muted); font-weight:700;">CONNECTED</div>
         <div style="font-weight:900; font-size:1.15rem; color:var(--primary);" id="stNameDisplay">Student</div>
       </div>
       <div style="background:var(--teal-light); color:var(--teal); padding:6px 12px; border-radius:999px; font-weight:800; font-size:0.85rem;">
-        ● LIVE
+        🕵️ ANONYMOUS MODE
       </div>
     </div>
 
+    <!-- Waiting Room before GM clicks Start -->
+    <div class="st-card waiting-card" id="stWaitingCard">
+      <div class="waiting-icon">⏳</div>
+      <h2 style="color:var(--primary); font-size:1.5rem;">You're in the Lobby!</h2>
+      <p style="color:var(--muted); font-size:1.05rem; line-height:1.5;">
+        Look at the projector screen to see your name.<br>
+        Waiting for the <strong>Game Master</strong> to start Question 1...
+      </p>
+    </div>
+
     <!-- Stage 1 -->
-    <div class="st-card" id="stStage1">
+    <div class="st-card hidden" id="stStage1">
       <div style="color:var(--primary); font-weight:900; text-transform:uppercase;" id="stQLabel">Question 1 / 10</div>
       <p style="color:var(--muted); font-size:1rem;">Tap the <strong>ONE WRONG WORD</strong> (1 chance only!):</p>
 
@@ -269,28 +323,79 @@
       <div id="stS2Status"></div>
     </div>
 
-    <!-- Stage 3 -->
+    <!-- Stage 3: Built-in Emoji Picker -->
     <div class="st-card hidden" id="stStage3">
-      <div style="color:var(--primary); font-weight:900; text-transform:uppercase;">Stage 3: Emoji Storyteller</div>
-      <p style="color:var(--muted); font-size:1rem;">Pick or type <strong>1 to 3 emojis</strong> that show how your life has changed!</p>
-      <input type="text" class="st-emoji-input" id="stEmojiInput" placeholder="🏋️‍♂️💸😊" maxlength="12">
-      <div class="emoji-quick-bar">
-        <button class="emoji-chip" onclick="addEmoji('🏋️‍♂️')">🏋️‍♂️</button>
-        <button class="emoji-chip" onclick="addEmoji('💼')">💼</button>
-        <button class="emoji-chip" onclick="addEmoji('🏍️')">🏍️</button>
-        <button class="emoji-chip" onclick="addEmoji('💰')">💰</button>
-        <button class="emoji-chip" onclick="addEmoji('❤️')">❤️</button>
-        <button class="emoji-chip" onclick="addEmoji('😴')">😴</button>
-        <button class="emoji-chip" onclick="addEmoji('🧘‍♂️')">🧘‍♂️</button>
+      <div style="color:var(--primary); font-weight:900; text-transform:uppercase;">Stage 3: Mystery Emoji Story</div>
+      <p style="color:var(--muted); font-size:0.98rem;">Tap <strong>1 to 3 emojis</strong> below that represent how your life has changed (your name stays hidden!):</p>
+      
+      <div class="emoji-display-row">
+        <input type="text" class="st-emoji-input" id="stEmojiInput" placeholder="Tap emojis below..." readonly>
+        <button class="btn-clear-emoji" onclick="clearEmoji()" title="Clear">⌫</button>
       </div>
-      <button class="btn-primary" style="background:var(--accent); animation:none;" onclick="studentSubmitEmoji()">Send My Emojis 🎭</button>
+
+      <div class="emoji-picker-box">
+        <div>
+          <div class="emoji-cat-title">💼 Work, Money & Lifestyle</div>
+          <div class="emoji-grid-picker">
+            <button class="emoji-item-btn" onclick="addEmoji('💼')">💼</button>
+            <button class="emoji-item-btn" onclick="addEmoji('🎓')">🎓</button>
+            <button class="emoji-item-btn" onclick="addEmoji('💰')">💰</button>
+            <button class="emoji-item-btn" onclick="addEmoji('💸')">💸</button>
+            <button class="emoji-item-btn" onclick="addEmoji('🏠')">🏠</button>
+            <button class="emoji-item-btn" onclick="addEmoji('🏍️')">🏍️</button>
+            <button class="emoji-item-btn" onclick="addEmoji('🚗')">🚗</button>
+            <button class="emoji-item-btn" onclick="addEmoji('✈️')">✈️</button>
+            <button class="emoji-item-btn" onclick="addEmoji('📱')">📱</button>
+            <button class="emoji-item-btn" onclick="addEmoji('💻')">💻</button>
+            <button class="emoji-item-btn" onclick="addEmoji('📚')">📚</button>
+            <button class="emoji-item-btn" onclick="addEmoji('☕')">☕</button>
+          </div>
+        </div>
+
+        <div>
+          <div class="emoji-cat-title">🏋️‍♂️ Health & Appearance</div>
+          <div class="emoji-grid-picker">
+            <button class="emoji-item-btn" onclick="addEmoji('🏋️‍♂️')">🏋️‍♂️</button>
+            <button class="emoji-item-btn" onclick="addEmoji('🏃‍♂️')">🏃‍♂️</button>
+            <button class="emoji-item-btn" onclick="addEmoji('🥗')">🥗</button>
+            <button class="emoji-item-btn" onclick="addEmoji('🍔')">🍔</button>
+            <button class="emoji-item-btn" onclick="addEmoji('💇‍♂️')">💇‍♂️</button>
+            <button class="emoji-item-btn" onclick="addEmoji('🧔')">🧔</button>
+            <button class="emoji-item-btn" onclick="addEmoji('💪')">💪</button>
+            <button class="emoji-item-btn" onclick="addEmoji('😴')">😴</button>
+            <button class="emoji-item-btn" onclick="addEmoji('🧘‍♂️')">🧘‍♂️</button>
+            <button class="emoji-item-btn" onclick="addEmoji('🩺')">🩺</button>
+            <button class="emoji-item-btn" onclick="addEmoji('⚖️')">⚖️</button>
+            <button class="emoji-item-btn" onclick="addEmoji('✨')">✨</button>
+          </div>
+        </div>
+
+        <div>
+          <div class="emoji-cat-title">😊 Emotions & Relationships</div>
+          <div class="emoji-grid-picker">
+            <button class="emoji-item-btn" onclick="addEmoji('😊')">😊</button>
+            <button class="emoji-item-btn" onclick="addEmoji('🥳')">🥳</button>
+            <button class="emoji-item-btn" onclick="addEmoji('😎')">😎</button>
+            <button class="emoji-item-btn" onclick="addEmoji('❤️')">❤️</button>
+            <button class="emoji-item-btn" onclick="addEmoji('💍')">💍</button>
+            <button class="emoji-item-btn" onclick="addEmoji('💔')">💔</button>
+            <button class="emoji-item-btn" onclick="addEmoji('🥹')">🥹</button>
+            <button class="emoji-item-btn" onclick="addEmoji('🤯')">🤯</button>
+            <button class="emoji-item-btn" onclick="addEmoji('😵‍💫')">😵‍💫</button>
+            <button class="emoji-item-btn" onclick="addEmoji('🔥')">🔥</button>
+            <button class="emoji-item-btn" onclick="addEmoji('🌱')">🌱</button>
+            <button class="emoji-item-btn" onclick="addEmoji('🙏')">🙏</button>
+          </div>
+        </div>
+      </div>
+
+      <button class="btn-primary" style="background:var(--accent); animation:none;" onclick="studentSubmitEmoji()">Send Mystery Emojis 🎭</button>
       <div id="stS3Status"></div>
     </div>
   </div>
 </div>
 
 <script>
-  // MUST MATCH FIXED_ROOM_ID IN gm.html
   const FIXED_ROOM_ID = "ECP-LIVE-CLASSROOM-2026";
 
   const questions = [
@@ -312,6 +417,7 @@
   let stCurrentQ = 0;
   let stLocked = false;
   let stSubmittedChoice = null;
+  let selectedEmojis = [];
   let audioCtx = null;
 
   function playClickSound() {
@@ -374,6 +480,14 @@
   }
 
   function handleStudentSync(state) {
+    // Stay on Waiting Screen until GM clicks START GAME
+    if (!state.started) {
+      document.getElementById('stWaitingCard').classList.remove('hidden');
+      [1, 2, 3].forEach(n => document.getElementById(`stStage${n}`).classList.add('hidden'));
+      return;
+    }
+
+    document.getElementById('stWaitingCard').classList.add('hidden');
     [1, 2, 3].forEach(n => {
       document.getElementById(`stStage${n}`).classList.toggle('hidden', n !== state.stage);
     });
@@ -412,7 +526,7 @@
 
     const statusDiv = document.getElementById('stS1Status');
     if (stSubmittedChoice !== null) {
-      statusDiv.innerHTML = `<div class="status-banner">✅ Answer Locked! Look at the projector screen.</div>`;
+      statusDiv.innerHTML = `<div class="status-banner">✅ Anonymous Answer Locked! Look at the projector.</div>`;
     } else if (stLocked) {
       statusDiv.innerHTML = `<div class="locked-banner">🔒 Time's up! Question locked by Game Master.</div>`;
     } else {
@@ -437,12 +551,21 @@
     if (!text) return;
     playClickSound();
     hostConn.send({ type: 'S2_BIO', text });
-    document.getElementById('stS2Status').innerHTML = `<div class="status-banner">✅ Sent to Game Master!</div>`;
+    document.getElementById('stS2Status').innerHTML = `<div class="status-banner">✅ Anonymous Revision Sent!</div>`;
   }
 
   function addEmoji(em) {
-    const inp = document.getElementById('stEmojiInput');
-    if (inp.value.length < 10) inp.value += em;
+    if (selectedEmojis.length >= 3) {
+      selectedEmojis.shift(); // Keep max 3 emojis smoothly
+    }
+    selectedEmojis.push(em);
+    document.getElementById('stEmojiInput').value = selectedEmojis.join(" ");
+    playClickSound();
+  }
+
+  function clearEmoji() {
+    selectedEmojis.pop();
+    document.getElementById('stEmojiInput').value = selectedEmojis.join(" ");
     playClickSound();
   }
 
@@ -451,7 +574,7 @@
     if (!emoji) return;
     playClickSound();
     hostConn.send({ type: 'S3_EMOJI', emoji });
-    document.getElementById('stS3Status').innerHTML = `<div class="status-banner">🎭 Emoji Sent! Get ready to tell your story!</div>`;
+    document.getElementById('stS3Status').innerHTML = `<div class="status-banner">🎭 Mystery Emojis Sent! Get ready when your card appears!</div>`;
   }
 </script>
 </body>
