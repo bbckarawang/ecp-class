@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ECP Student - How Have You Changed?</title>
+<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<style>
+  :root {
+    --bg: #f0f4f8;
+    --card: #ffffff;
+    --primary: #4f46e5;
+    --accent: #f59e0b;
+    --teal: #059669;
+    --teal-light: #d1fae5;
+    --danger: #e11d48;
+    --danger-light: #ffe4e6;
+    --text: #1e293b;
+    --muted: #64748b;
+    --border: #cbd5e1;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; }
+  body {
+    background: linear-gradient(160deg, #e0e7ff 0%, #f8fafc 55%, #fef3c7 100%);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    padding: 16px;
+  }
+  .hidden { display: none !important; }
+
+  @keyframes bounceIn {
+    0% { transform: scale(0.8); opacity: 0; }
+    65% { transform: scale(1.05); }
+    100% { transform: scale(1); opacity: 1; }
+  }
+  @keyframes pulseRing {
+    0% { box-shadow: 0 0 0 0 rgba(79, 70, 229, 0.4); }
+    70% { box-shadow: 0 0 0 12px rgba(79, 70, 229, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(79, 70, 229, 0); }
+  }
+
+  button {
+    cursor: pointer;
+    border: none;
+    border-radius: 14px;
+    font-weight: 800;
+    transition: transform 0.12s, background 0.2s;
+  }
+  button:active:not(:disabled) { transform: scale(0.95); }
+  button:disabled { opacity: 0.55; cursor: not-allowed; }
+
+  .container {
+    max-width: 540px;
+    width: 100%;
+    margin: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  /* Join Screen */
+  .join-card {
+    background: var(--card);
+    border-radius: 24px;
+    padding: 32px 24px;
+    box-shadow: 0 15px 35px rgba(79, 70, 229, 0.12);
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    animation: bounceIn 0.45s ease-out;
+  }
+  .badge {
+    align-self: center;
+    background: #e0e7ff;
+    color: var(--primary);
+    padding: 6px 14px;
+    border-radius: 999px;
+    font-size: 0.85rem;
+    font-weight: 800;
+    text-transform: uppercase;
+  }
+  .join-card h1 { font-size: 1.85rem; color: var(--text); }
+  .join-card input {
+    width: 100%;
+    padding: 16px;
+    border-radius: 14px;
+    border: 2px solid var(--border);
+    font-size: 1.2rem;
+    font-weight: 700;
+    text-align: center;
+    color: var(--text);
+    background: #f8fafc;
+  }
+  .join-card input:focus {
+    outline: none;
+    border-color: var(--primary);
+    background: #fff;
+  }
+  .btn-primary {
+    background: var(--primary);
+    color: #fff;
+    padding: 16px;
+    font-size: 1.15rem;
+    animation: pulseRing 2s infinite;
+  }
+
+  /* Active Game Header */
+  .st-header {
+    background: var(--card);
+    padding: 14px 18px;
+    border-radius: 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+    border-bottom: 4px solid var(--primary);
+  }
+  .st-card {
+    background: var(--card);
+    border-radius: 22px;
+    padding: 24px 20px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.06);
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    animation: bounceIn 0.35s ease-out;
+  }
+  .st-word-cloud {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    justify-content: center;
+    margin: 8px 0;
+  }
+  .st-word-btn {
+    background: #f1f5f9;
+    color: var(--text);
+    border: 2px solid #cbd5e1;
+    padding: 12px 16px;
+    font-size: 1.25rem;
+  }
+  .st-word-btn.selected {
+    background: var(--accent);
+    color: #fff;
+    border-color: #d97706;
+    transform: scale(1.06);
+    box-shadow: 0 4px 12px rgba(245, 158, 11, 0.35);
+  }
+  .st-no-err-btn {
+    background: var(--teal-light);
+    color: var(--teal);
+    border: 2px solid #6ee7b7;
+    padding: 15px;
+    font-size: 1.1rem;
+    width: 100%;
+  }
+  .st-no-err-btn.selected {
+    background: var(--teal);
+    color: #fff;
+    border-color: #047857;
+  }
+
+  textarea.st-bio-input {
+    width: 100%;
+    min-height: 175px;
+    background: #f8fafc;
+    color: var(--text);
+    border: 2px solid var(--border);
+    border-radius: 14px;
+    padding: 14px;
+    font-size: 1.08rem;
+    line-height: 1.5;
+  }
+  textarea.st-bio-input:focus { outline: none; border-color: var(--primary); background: #fff; }
+
+  input.st-emoji-input {
+    width: 100%;
+    background: #f8fafc;
+    color: var(--text);
+    border: 2px solid var(--border);
+    border-radius: 16px;
+    padding: 18px;
+    font-size: 3.2rem;
+    text-align: center;
+  }
+  .emoji-quick-bar {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .emoji-chip {
+    background: #f1f5f9;
+    font-size: 1.7rem;
+    padding: 8px 12px;
+    border-radius: 12px;
+  }
+
+  .status-banner {
+    background: var(--teal-light);
+    border: 2px solid #6ee7b7;
+    color: #065f46;
+    padding: 15px;
+    border-radius: 14px;
+    text-align: center;
+    font-weight: 800;
+    font-size: 1.05rem;
+    animation: bounceIn 0.3s ease-out;
+  }
+  .locked-banner {
+    background: var(--danger-light);
+    border: 2px solid #fda4af;
+    color: #9f1239;
+    padding: 15px;
+    border-radius: 14px;
+    text-align: center;
+    font-weight: 800;
+    font-size: 1.05rem;
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <!-- 1. DIRECT NAME INPUT (NO ROOM CODE NEEDED) -->
+  <div class="join-card" id="joinCard">
+    <div class="badge">ECP Interactive Class</div>
+    <div style="font-size: 3.5rem;">🚀</div>
+    <h1>"How Have You Changed?"</h1>
+    <p style="color:var(--muted); font-size:1rem;">Enter your name to join the live session directly!</p>
+    <input type="text" id="studentNameInput" placeholder="Type your name..." maxlength="20" onkeydown="if(event.key==='Enter') joinClass()">
+    <button class="btn-primary" id="joinBtn" onclick="joinClass()">Join Class Now ▶</button>
+    <div id="statusMsg" style="color:var(--danger); font-weight:700; font-size:0.95rem;"></div>
+  </div>
+
+  <!-- 2. STUDENT GAME AREA -->
+  <div id="gameArea" class="hidden" style="display:flex; flex-direction:column; gap:16px;">
+    <div class="st-header">
+      <div>
+        <div style="font-size:0.75rem; color:var(--muted); font-weight:700;">PLAYER</div>
+        <div style="font-weight:900; font-size:1.15rem; color:var(--primary);" id="stNameDisplay">Student</div>
+      </div>
+      <div style="background:var(--teal-light); color:var(--teal); padding:6px 12px; border-radius:999px; font-weight:800; font-size:0.85rem;">
+        ● LIVE
+      </div>
+    </div>
+
+    <!-- Stage 1 -->
+    <div class="st-card" id="stStage1">
+      <div style="color:var(--primary); font-weight:900; text-transform:uppercase;" id="stQLabel">Question 1 / 10</div>
+      <p style="color:var(--muted); font-size:1rem;">Tap the <strong>ONE WRONG WORD</strong> (1 chance only!):</p>
+
+      <div class="st-word-cloud" id="stWordCloud"></div>
+
+      <button class="st-no-err-btn" id="stNoErrBtn" onclick="studentSelectAnswer('NO_ERROR')">✅ 100% Correct (No Error)</button>
+
+      <div id="stS1Status"></div>
+    </div>
+
+    <!-- Stage 2 -->
+    <div class="st-card hidden" id="stStage2">
+      <div style="color:var(--primary); font-weight:900; text-transform:uppercase;">Stage 2: Fix the Bio / Chat!</div>
+      <p style="color:var(--muted); font-size:0.98rem;">Fix the <strong>5 grammar mistakes</strong> in the text below, then tap Send:</p>
+      <textarea class="st-bio-input" id="stBioTextarea">Hi guys! Long time no see. My life has changed a lot! First, I have start a new job in 2025. I also have lose weight for 4 kilograms because I go to the gym last month. Now, I am more busier, but I am more happy than before!</textarea>
+      <button class="btn-primary" style="animation:none;" onclick="studentSubmitBio()">Send My Revision 🚀</button>
+      <div id="stS2Status"></div>
+    </div>
+
+    <!-- Stage 3 -->
+    <div class="st-card hidden" id="stStage3">
+      <div style="color:var(--primary); font-weight:900; text-transform:uppercase;">Stage 3: Emoji Storyteller</div>
+      <p style="color:var(--muted); font-size:1rem;">Pick or type <strong>1 to 3 emojis</strong> that show how your life has changed!</p>
+      <input type="text" class="st-emoji-input" id="stEmojiInput" placeholder="🏋️‍♂️💸😊" maxlength="12">
+      <div class="emoji-quick-bar">
+        <button class="emoji-chip" onclick="addEmoji('🏋️‍♂️')">🏋️‍♂️</button>
+        <button class="emoji-chip" onclick="addEmoji('💼')">💼</button>
+        <button class="emoji-chip" onclick="addEmoji('🏍️')">🏍️</button>
+        <button class="emoji-chip" onclick="addEmoji('💰')">💰</button>
+        <button class="emoji-chip" onclick="addEmoji('❤️')">❤️</button>
+        <button class="emoji-chip" onclick="addEmoji('😴')">😴</button>
+        <button class="emoji-chip" onclick="addEmoji('🧘‍♂️')">🧘‍♂️</button>
+      </div>
+      <button class="btn-primary" style="background:var(--accent); animation:none;" onclick="studentSubmitEmoji()">Send My Emojis 🎭</button>
+      <div id="stS3Status"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // MUST MATCH FIXED_ROOM_ID IN gm.html
+  const FIXED_ROOM_ID = "ECP-LIVE-CLASSROOM-2026";
+
+  const questions = [
+    ["I", "have", "grown", "my", "bread", "for", "two", "months."],
+    ["I", "have", "moved", "to", "a", "new", "kos", "last", "month."],
+    ["Now,", "I", "am", "more", "healthier", "than", "before."],
+    ["I", "have", "buy", "a", "new", "motorcycle."],
+    ["I", "meet", "someone", "special", "two", "weeks", "ago."],
+    ["I", "am", "more", "patient", "and", "more", "disciplined", "than", "before."],
+    ["I", "have", "lose", "weight", "for", "about", "5", "kilograms."],
+    ["I", "started", "a", "new", "job", "in", "2025."],
+    ["I", "am", "stronger", "and", "more", "confident", "than", "before."],
+    ["I", "have", "save", "more", "money", "this", "year."]
+  ];
+
+  let peer = null;
+  let hostConn = null;
+  let myName = "";
+  let stCurrentQ = 0;
+  let stLocked = false;
+  let stSubmittedChoice = null;
+  let audioCtx = null;
+
+  function playClickSound() {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    const now = audioCtx.currentTime;
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(600, now);
+    osc.frequency.exponentialRampToValueAtTime(950, now + 0.08);
+    gain.gain.setValueAtTime(0.2, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.start(now);
+    osc.stop(now + 0.11);
+  }
+
+  function joinClass() {
+    myName = document.getElementById('studentNameInput').value.trim();
+    const statusMsg = document.getElementById('statusMsg');
+    if (!myName) {
+      statusMsg.textContent = "Please enter your name first!";
+      return;
+    }
+
+    playClickSound();
+    statusMsg.style.color = "#4f46e5";
+    statusMsg.textContent = "Connecting to classroom...";
+    document.getElementById('joinBtn').disabled = true;
+
+    peer = new Peer();
+    peer.on('open', () => {
+      hostConn = peer.connect(FIXED_ROOM_ID);
+
+      hostConn.on('open', () => {
+        hostConn.send({ type: 'JOIN', name: myName });
+        document.getElementById('joinCard').classList.add('hidden');
+        document.getElementById('gameArea').classList.remove('hidden');
+        document.getElementById('stNameDisplay').textContent = myName;
+      });
+
+      hostConn.on('data', (data) => {
+        if (data.type === 'SYNC_STATE') {
+          handleStudentSync(data);
+        }
+      });
+
+      hostConn.on('close', () => {
+        alert("Class session ended by Game Master.");
+      });
+    });
+
+    peer.on('error', () => {
+      statusMsg.style.color = "#e11d48";
+      statusMsg.textContent = "Game Master hasn't opened gm.html yet. Ask your teacher & try again!";
+      document.getElementById('joinBtn').disabled = false;
+    });
+  }
+
+  function handleStudentSync(state) {
+    [1, 2, 3].forEach(n => {
+      document.getElementById(`stStage${n}`).classList.toggle('hidden', n !== state.stage);
+    });
+
+    if (state.stage === 1) {
+      if (state.qIndex !== stCurrentQ) {
+        stCurrentQ = state.qIndex;
+        stSubmittedChoice = null;
+      }
+      stLocked = state.locked;
+      renderStudentStage1();
+    }
+  }
+
+  function renderStudentStage1() {
+    const words = questions[stCurrentQ];
+    document.getElementById('stQLabel').textContent = `Question ${stCurrentQ + 1} / ${questions.length}`;
+    const cloud = document.getElementById('stWordCloud');
+    cloud.innerHTML = '';
+
+    const disabled = (stSubmittedChoice !== null) || stLocked;
+
+    words.forEach((word, idx) => {
+      const btn = document.createElement('button');
+      btn.className = 'st-word-btn';
+      if (stSubmittedChoice === idx) btn.classList.add('selected');
+      btn.textContent = word;
+      btn.disabled = disabled;
+      btn.onclick = () => studentSelectAnswer(idx);
+      cloud.appendChild(btn);
+    });
+
+    const noErrBtn = document.getElementById('stNoErrBtn');
+    noErrBtn.disabled = disabled;
+    noErrBtn.classList.toggle('selected', stSubmittedChoice === 'NO_ERROR');
+
+    const statusDiv = document.getElementById('stS1Status');
+    if (stSubmittedChoice !== null) {
+      statusDiv.innerHTML = `<div class="status-banner">✅ Answer Locked! Look at the projector screen.</div>`;
+    } else if (stLocked) {
+      statusDiv.innerHTML = `<div class="locked-banner">🔒 Time's up! Question locked by Game Master.</div>`;
+    } else {
+      statusDiv.innerHTML = '';
+    }
+  }
+
+  function studentSelectAnswer(choice) {
+    if (stSubmittedChoice !== null || stLocked) return;
+    playClickSound();
+    stSubmittedChoice = choice;
+    hostConn.send({
+      type: 'S1_ANSWER',
+      qIndex: stCurrentQ,
+      choice: choice
+    });
+    renderStudentStage1();
+  }
+
+  function studentSubmitBio() {
+    const text = document.getElementById('stBioTextarea').value.trim();
+    if (!text) return;
+    playClickSound();
+    hostConn.send({ type: 'S2_BIO', text });
+    document.getElementById('stS2Status').innerHTML = `<div class="status-banner">✅ Sent to Game Master!</div>`;
+  }
+
+  function addEmoji(em) {
+    const inp = document.getElementById('stEmojiInput');
+    if (inp.value.length < 10) inp.value += em;
+    playClickSound();
+  }
+
+  function studentSubmitEmoji() {
+    const emoji = document.getElementById('stEmojiInput').value.trim();
+    if (!emoji) return;
+    playClickSound();
+    hostConn.send({ type: 'S3_EMOJI', emoji });
+    document.getElementById('stS3Status').innerHTML = `<div class="status-banner">🎭 Emoji Sent! Get ready to tell your story!</div>`;
+  }
+</script>
+</body>
+</html>
