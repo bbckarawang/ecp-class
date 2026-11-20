@@ -26,13 +26,14 @@
     min-height: 100vh;
     display: flex;
     flex-direction: column;
-    padding: 16px;
+    padding: 14px;
+    overflow-x: hidden;
   }
   .hidden { display: none !important; }
 
   @keyframes bounceIn {
-    0% { transform: scale(0.8); opacity: 0; }
-    65% { transform: scale(1.05); }
+    0% { transform: scale(0.85); opacity: 0; }
+    65% { transform: scale(1.03); }
     100% { transform: scale(1); opacity: 1; }
   }
   @keyframes pulseRing {
@@ -56,12 +57,12 @@
   button:disabled { opacity: 0.55; cursor: not-allowed; }
 
   .container {
-    max-width: 540px;
+    max-width: 500px;
     width: 100%;
     margin: auto;
     display: flex;
     flex-direction: column;
-    gap: 16px;
+    gap: 14px;
   }
 
   /* Join Screen */
@@ -86,9 +87,10 @@
     font-weight: 800;
     text-transform: uppercase;
   }
-  .join-card h1 { font-size: 1.85rem; color: var(--text); }
+  .join-card h1 { font-size: 1.8rem; color: var(--text); }
   .join-card input {
     width: 100%;
+    min-width: 0;
     padding: 16px;
     border-radius: 14px;
     border: 2px solid var(--border);
@@ -110,35 +112,55 @@
   /* Active Game Header */
   .st-header {
     background: var(--card);
-    padding: 14px 18px;
+    padding: 12px 16px;
     border-radius: 16px;
     display: flex;
     justify-content: space-between;
     align-items: center;
+    gap: 8px;
     box-shadow: 0 4px 15px rgba(0,0,0,0.05);
     border-bottom: 4px solid var(--primary);
   }
+  .header-right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .anon-pill {
+    background: var(--teal-light);
+    color: var(--teal);
+    padding: 6px 10px;
+    border-radius: 999px;
+    font-weight: 800;
+    font-size: 0.78rem;
+  }
+  .btn-exit {
+    background: var(--danger-light);
+    color: var(--danger);
+    padding: 6px 12px;
+    border-radius: 10px;
+    font-size: 0.85rem;
+    border: 1px solid #fda4af;
+  }
+
   .st-card {
     background: var(--card);
     border-radius: 22px;
-    padding: 24px 20px;
+    padding: 20px 18px;
     box-shadow: 0 10px 25px rgba(0,0,0,0.06);
     display: flex;
     flex-direction: column;
-    gap: 16px;
+    gap: 14px;
     animation: bounceIn 0.35s ease-out;
   }
 
   /* Waiting Room Card */
   .waiting-card {
     text-align: center;
-    padding: 40px 24px;
+    padding: 38px 20px;
     align-items: center;
   }
-  .waiting-icon {
-    font-size: 4rem;
-    animation: floatWait 2s ease-in-out infinite;
-  }
+  .waiting-icon { font-size: 4rem; animation: floatWait 2s ease-in-out infinite; }
 
   .st-word-cloud {
     display: flex;
@@ -169,61 +191,68 @@
     font-size: 1.1rem;
     width: 100%;
   }
-  .st-no-err-btn.selected {
-    background: var(--teal);
-    color: #fff;
-    border-color: #047857;
-  }
+  .st-no-err-btn.selected { background: var(--teal); color: #fff; border-color: #047857; }
 
   textarea.st-bio-input {
     width: 100%;
-    min-height: 175px;
+    min-height: 170px;
     background: #f8fafc;
     color: var(--text);
     border: 2px solid var(--border);
     border-radius: 14px;
     padding: 14px;
-    font-size: 1.08rem;
+    font-size: 1.05rem;
     line-height: 1.5;
   }
   textarea.st-bio-input:focus { outline: none; border-color: var(--primary); background: #fff; }
 
-  /* WhatsApp-style Emoji Picker */
+  /* FIXED RESPONSIVE EMOJI BOX (Keyboard enabled + Quick Picker) */
   .emoji-display-row {
     display: flex;
-    gap: 10px;
-    align-items: center;
+    gap: 8px;
+    align-items: stretch;
+    width: 100%;
   }
   input.st-emoji-input {
     flex: 1;
+    min-width: 0; /* Prevents horizontal overflow on mobile */
+    width: 100%;
     background: #f8fafc;
     color: var(--text);
     border: 2px solid var(--border);
-    border-radius: 16px;
-    padding: 14px;
-    font-size: 2.6rem;
+    border-radius: 14px;
+    padding: 12px 10px;
+    font-size: 2.2rem;
     text-align: center;
   }
+  input.st-emoji-input::placeholder {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--muted);
+  }
+  input.st-emoji-input:focus { outline: none; border-color: var(--primary); background: #fff; }
   .btn-clear-emoji {
+    flex-shrink: 0;
     background: #fee2e2;
     color: #dc2626;
-    padding: 18px 16px;
-    font-size: 1.2rem;
-    border-radius: 16px;
+    padding: 0 16px;
+    font-size: 1.3rem;
+    border-radius: 14px;
+    border: 2px solid #fecaca;
   }
   .emoji-picker-box {
     background: #f8fafc;
     border: 2px solid #e2e8f0;
     border-radius: 16px;
-    padding: 12px;
-    max-height: 220px;
+    padding: 10px;
+    max-height: 210px;
     overflow-y: auto;
     display: flex;
     flex-direction: column;
     gap: 10px;
   }
   .emoji-cat-title {
-    font-size: 0.78rem;
+    font-size: 0.75rem;
     font-weight: 800;
     color: var(--muted);
     text-transform: uppercase;
@@ -237,7 +266,7 @@
   .emoji-item-btn {
     background: #ffffff;
     border: 1px solid #e2e8f0;
-    font-size: 1.65rem;
+    font-size: 1.55rem;
     padding: 6px 0;
     border-radius: 10px;
   }
@@ -247,22 +276,22 @@
     background: var(--teal-light);
     border: 2px solid #6ee7b7;
     color: #065f46;
-    padding: 15px;
+    padding: 14px;
     border-radius: 14px;
     text-align: center;
     font-weight: 800;
-    font-size: 1.05rem;
+    font-size: 1rem;
     animation: bounceIn 0.3s ease-out;
   }
   .locked-banner {
     background: var(--danger-light);
     border: 2px solid #fda4af;
     color: #9f1239;
-    padding: 15px;
+    padding: 14px;
     border-radius: 14px;
     text-align: center;
     font-weight: 800;
-    font-size: 1.05rem;
+    font-size: 1rem;
   }
 </style>
 </head>
@@ -275,28 +304,29 @@
     <div style="font-size: 3.5rem;">🚀</div>
     <h1>"How Have You Changed?"</h1>
     <p style="color:var(--muted); font-size:1rem;">Enter your name to join the lobby!</p>
-    <input type="text" id="studentNameInput" placeholder="Type your name..." maxlength="20" onkeydown="if(event.key==='Enter') joinClass()">
-    <button class="btn-primary" id="joinBtn" onclick="joinClass()">Join Lobby ▶</button>
+    <input type="text" id="studentNameInput" placeholder="Type your name..." maxlength="20" onkeydown="if(event.key==='Enter') joinClass(false)">
+    <button class="btn-primary" id="joinBtn" onclick="joinClass(false)">Join Lobby ▶</button>
     <div id="statusMsg" style="color:var(--danger); font-weight:700; font-size:0.95rem;"></div>
   </div>
 
   <!-- 2. STUDENT GAME AREA -->
-  <div id="gameArea" class="hidden" style="display:flex; flex-direction:column; gap:16px;">
+  <div id="gameArea" class="hidden" style="display:flex; flex-direction:column; gap:14px;">
     <div class="st-header">
       <div>
-        <div style="font-size:0.75rem; color:var(--muted); font-weight:700;">CONNECTED</div>
-        <div style="font-weight:900; font-size:1.15rem; color:var(--primary);" id="stNameDisplay">Student</div>
+        <div style="font-size:0.7rem; color:var(--muted); font-weight:700;">PLAYER</div>
+        <div style="font-weight:900; font-size:1.1rem; color:var(--primary);" id="stNameDisplay">Student</div>
       </div>
-      <div style="background:var(--teal-light); color:var(--teal); padding:6px 12px; border-radius:999px; font-weight:800; font-size:0.85rem;">
-        🕵️ ANONYMOUS MODE
+      <div class="header-right">
+        <div class="anon-pill">🕵️ ANONYMOUS</div>
+        <button class="btn-exit" onclick="exitRoom()">Exit 🚪</button>
       </div>
     </div>
 
     <!-- Waiting Room before GM clicks Start -->
     <div class="st-card waiting-card" id="stWaitingCard">
       <div class="waiting-icon">⏳</div>
-      <h2 style="color:var(--primary); font-size:1.5rem;">You're in the Lobby!</h2>
-      <p style="color:var(--muted); font-size:1.05rem; line-height:1.5;">
+      <h2 style="color:var(--primary); font-size:1.45rem;">You're in the Lobby!</h2>
+      <p style="color:var(--muted); font-size:1rem; line-height:1.5;">
         Look at the projector screen to see your name.<br>
         Waiting for the <strong>Game Master</strong> to start Question 1...
       </p>
@@ -305,7 +335,7 @@
     <!-- Stage 1 -->
     <div class="st-card hidden" id="stStage1">
       <div style="color:var(--primary); font-weight:900; text-transform:uppercase;" id="stQLabel">Question 1 / 10</div>
-      <p style="color:var(--muted); font-size:1rem;">Tap the <strong>ONE WRONG WORD</strong> (1 chance only!):</p>
+      <p style="color:var(--muted); font-size:0.98rem;">Tap the <strong>ONE WRONG WORD</strong> (1 chance only!):</p>
 
       <div class="st-word-cloud" id="stWordCloud"></div>
 
@@ -317,19 +347,19 @@
     <!-- Stage 2 -->
     <div class="st-card hidden" id="stStage2">
       <div style="color:var(--primary); font-weight:900; text-transform:uppercase;">Stage 2: Fix the Bio / Chat!</div>
-      <p style="color:var(--muted); font-size:0.98rem;">Fix the <strong>5 grammar mistakes</strong> in the text below, then tap Send:</p>
+      <p style="color:var(--muted); font-size:0.95rem;">Fix the <strong>5 grammar mistakes</strong> in the text below, then tap Send:</p>
       <textarea class="st-bio-input" id="stBioTextarea">Hi guys! Long time no see. My life has changed a lot! First, I have start a new job in 2025. I also have lose weight for 4 kilograms because I go to the gym last month. Now, I am more busier, but I am more happy than before!</textarea>
       <button class="btn-primary" style="animation:none;" onclick="studentSubmitBio()">Send My Revision 🚀</button>
       <div id="stS2Status"></div>
     </div>
 
-    <!-- Stage 3: Built-in Emoji Picker -->
+    <!-- Stage 3: Both Keyboard Input & Built-in Emoji Picker -->
     <div class="st-card hidden" id="stStage3">
       <div style="color:var(--primary); font-weight:900; text-transform:uppercase;">Stage 3: Mystery Emoji Story</div>
-      <p style="color:var(--muted); font-size:0.98rem;">Tap <strong>1 to 3 emojis</strong> below that represent how your life has changed (your name stays hidden!):</p>
+      <p style="color:var(--muted); font-size:0.95rem;">Type from your keyboard <strong>OR</strong> tap 1–3 emojis below:</p>
       
       <div class="emoji-display-row">
-        <input type="text" class="st-emoji-input" id="stEmojiInput" placeholder="Tap emojis below..." readonly>
+        <input type="text" class="st-emoji-input" id="stEmojiInput" placeholder="Tap here or pick below..." maxlength="15">
         <button class="btn-clear-emoji" onclick="clearEmoji()" title="Clear">⌫</button>
       </div>
 
@@ -413,11 +443,12 @@
 
   let peer = null;
   let hostConn = null;
+  let heartbeatTimer = null;
   let myName = "";
+  let mySessionId = "";
   let stCurrentQ = 0;
   let stLocked = false;
   let stSubmittedChoice = null;
-  let selectedEmojis = [];
   let audioCtx = null;
 
   function playClickSound() {
@@ -437,7 +468,26 @@
     osc.stop(now + 0.11);
   }
 
-  function joinClass() {
+  // Generate or retrieve persistent Session ID so accidental refresh doesn't create a duplicate player
+  function getSessionId() {
+    let sid = sessionStorage.getItem('ecp_session_id');
+    if (!sid) {
+      sid = 'SID-' + Math.random().toString(36).substring(2, 10);
+      sessionStorage.setItem('ecp_session_id', sid);
+    }
+    return sid;
+  }
+
+  // Auto-rejoin if the student accidentally refreshed the page while active
+  window.addEventListener('DOMContentLoaded', () => {
+    const savedName = sessionStorage.getItem('ecp_student_name');
+    if (savedName) {
+      document.getElementById('studentNameInput').value = savedName;
+      joinClass(true);
+    }
+  });
+
+  function joinClass(isAutoRejoin = false) {
     myName = document.getElementById('studentNameInput').value.trim();
     const statusMsg = document.getElementById('statusMsg');
     if (!myName) {
@@ -445,9 +495,12 @@
       return;
     }
 
-    playClickSound();
+    mySessionId = getSessionId();
+    sessionStorage.setItem('ecp_student_name', myName);
+
+    if (!isAutoRejoin) playClickSound();
     statusMsg.style.color = "#4f46e5";
-    statusMsg.textContent = "Connecting to classroom...";
+    statusMsg.textContent = isAutoRejoin ? "Reconnecting to classroom..." : "Connecting to classroom...";
     document.getElementById('joinBtn').disabled = true;
 
     peer = new Peer();
@@ -455,10 +508,24 @@
       hostConn = peer.connect(FIXED_ROOM_ID);
 
       hostConn.on('open', () => {
-        hostConn.send({ type: 'JOIN', name: myName });
+        hostConn.send({
+          type: 'JOIN',
+          name: myName,
+          sessionId: mySessionId,
+          isRejoin: isAutoRejoin
+        });
+
         document.getElementById('joinCard').classList.add('hidden');
         document.getElementById('gameArea').classList.remove('hidden');
         document.getElementById('stNameDisplay').textContent = myName;
+
+        // Send heartbeat every 2.5s so GM detects immediately if student closes browser
+        clearInterval(heartbeatTimer);
+        heartbeatTimer = setInterval(() => {
+          if (hostConn && hostConn.open) {
+            hostConn.send({ type: 'PING' });
+          }
+        }, 2500);
       });
 
       hostConn.on('data', (data) => {
@@ -468,7 +535,8 @@
       });
 
       hostConn.on('close', () => {
-        alert("Class session ended by Game Master.");
+        clearInterval(heartbeatTimer);
+        alert("Disconnected from Game Master.");
       });
     });
 
@@ -479,8 +547,32 @@
     });
   }
 
+  function exitRoom() {
+    if (!confirm("Keluar dari room kelas sekarang?")) return;
+    clearInterval(heartbeatTimer);
+    if (hostConn && hostConn.open) {
+      hostConn.send({ type: 'LEAVE' });
+      setTimeout(() => {
+        if (peer) peer.destroy();
+      }, 150);
+    }
+    sessionStorage.removeItem('ecp_student_name');
+    sessionStorage.removeItem('ecp_session_id');
+    stSubmittedChoice = null;
+    document.getElementById('gameArea').classList.add('hidden');
+    document.getElementById('joinCard').classList.remove('hidden');
+    document.getElementById('joinBtn').disabled = false;
+    document.getElementById('statusMsg').textContent = "";
+  }
+
+  // Notify GM if student closes tab/browser
+  window.addEventListener('beforeunload', () => {
+    if (hostConn && hostConn.open) {
+      hostConn.send({ type: 'LEAVE' });
+    }
+  });
+
   function handleStudentSync(state) {
-    // Stay on Waiting Screen until GM clicks START GAME
     if (!state.started) {
       document.getElementById('stWaitingCard').classList.remove('hidden');
       [1, 2, 3].forEach(n => document.getElementById(`stStage${n}`).classList.add('hidden'));
@@ -496,6 +588,9 @@
       if (state.qIndex !== stCurrentQ) {
         stCurrentQ = state.qIndex;
         stSubmittedChoice = null;
+      }
+      if (state.savedChoice !== undefined && state.savedChoice !== null) {
+        stSubmittedChoice = state.savedChoice;
       }
       stLocked = state.locked;
       renderStudentStage1();
@@ -555,17 +650,17 @@
   }
 
   function addEmoji(em) {
-    if (selectedEmojis.length >= 3) {
-      selectedEmojis.shift(); // Keep max 3 emojis smoothly
-    }
-    selectedEmojis.push(em);
-    document.getElementById('stEmojiInput').value = selectedEmojis.join(" ");
+    const inp = document.getElementById('stEmojiInput');
+    inp.value = (inp.value + " " + em).trim();
     playClickSound();
   }
 
   function clearEmoji() {
-    selectedEmojis.pop();
-    document.getElementById('stEmojiInput').value = selectedEmojis.join(" ");
+    const inp = document.getElementById('stEmojiInput');
+    // Safely remove the last Unicode emoji character
+    const chars = Array.from(inp.value.trim());
+    chars.pop();
+    inp.value = chars.join("").trim();
     playClickSound();
   }
 
