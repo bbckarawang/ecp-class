@@ -1,0 +1,815 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ECP Game Master - How Have You Changed?</title>
+<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<style>
+  :root {
+    --bg: #f4f7fb;
+    --card: #ffffff;
+    --primary: #4f46e5;
+    --primary-light: #e0e7ff;
+    --accent: #f59e0b;
+    --accent-light: #fef3c7;
+    --teal: #059669;
+    --teal-light: #d1fae5;
+    --danger: #e11d48;
+    --danger-light: #ffe4e6;
+    --text: #1e293b;
+    --muted: #64748b;
+    --border: #e2e8f0;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; }
+  html, body {
+    height: 100vh;
+    width: 100vw;
+    overflow: hidden;
+    background: linear-gradient(135deg, #eef2ff 0%, #f8fafc 50%, #fefce8 100%);
+    color: var(--text);
+  }
+  body {
+    display: flex;
+    flex-direction: column;
+    padding: 1.5vh 2vw;
+    gap: 1.5vh;
+  }
+  .hidden { display: none !important; }
+  button {
+    cursor: pointer;
+    border: none;
+    border-radius: 12px;
+    font-weight: 800;
+    transition: transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s, background 0.2s;
+  }
+  button:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 6px 15px rgba(0,0,0,0.1); }
+  button:active:not(:disabled) { transform: scale(0.96); }
+  button:disabled { opacity: 0.45; cursor: not-allowed; }
+
+  /* Animations */
+  @keyframes popBounce {
+    0% { transform: scale(0.7); opacity: 0; }
+    70% { transform: scale(1.06); }
+    100% { transform: scale(1); opacity: 1; }
+  }
+  @keyframes wiggle {
+    0%, 100% { transform: rotate(0deg); }
+    25% { transform: rotate(-3deg); }
+    75% { transform: rotate(3deg); }
+  }
+  @keyframes floatEmoji {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-6px); }
+  }
+
+  /* Topbar */
+  .gm-topbar {
+    background: var(--card);
+    padding: 1.2vh 1.8vw;
+    border-radius: 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 4px 20px rgba(79, 70, 229, 0.08);
+    border-bottom: 4px solid var(--primary);
+    flex-shrink: 0;
+  }
+  .brand-area {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .status-dot {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: var(--accent);
+    box-shadow: 0 0 0 4px var(--accent-light);
+    transition: background 0.3s;
+  }
+  .status-dot.online {
+    background: var(--teal);
+    box-shadow: 0 0 0 4px var(--teal-light);
+  }
+  .brand-title {
+    font-size: clamp(1.1rem, 2.2vh, 1.6rem);
+    font-weight: 900;
+    color: var(--primary);
+  }
+  .stage-tabs { display: flex; gap: 8px; }
+  .tab-btn {
+    background: #f1f5f9;
+    color: var(--muted);
+    padding: 1vh 1.3vw;
+    font-size: clamp(0.95rem, 1.8vh, 1.2rem);
+  }
+  .tab-btn.active {
+    background: var(--primary);
+    color: #fff;
+    box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
+  }
+  .player-badge {
+    background: var(--teal-light);
+    color: var(--teal);
+    padding: 0.8vh 1.3vw;
+    border-radius: 999px;
+    font-weight: 800;
+    font-size: clamp(0.95rem, 1.8vh, 1.25rem);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  /* Main Container */
+  .gm-main {
+    flex: 1;
+    background: var(--card);
+    border-radius: 20px;
+    padding: 2.5vh 2.5vw;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    box-shadow: 0 10px 30px rgba(15, 23, 42, 0.06);
+    min-height: 0;
+  }
+
+  /* Stage 1 */
+  .gm-s1-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .gm-q-title {
+    font-size: clamp(1.2rem, 2.3vh, 1.7rem);
+    color: var(--primary);
+    font-weight: 900;
+  }
+  .sub-counter {
+    background: var(--accent-light);
+    color: #b45309;
+    padding: 0.8vh 1.5vw;
+    border-radius: 12px;
+    font-size: clamp(1.1rem, 2.2vh, 1.55rem);
+    font-weight: 800;
+    border: 2px solid #fde68a;
+  }
+  .gm-sentence-area {
+    background: #f8fafc;
+    border: 2px dashed #cbd5e1;
+    padding: 3vh 2vw;
+    border-radius: 18px;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+    gap: 14px;
+    min-height: 24vh;
+  }
+  .gm-word {
+    font-size: clamp(1.8rem, 4.2vh, 3.3rem);
+    font-weight: 800;
+    padding: 10px 18px;
+    border-radius: 14px;
+    background: #ffffff;
+    color: var(--text);
+    border: 2px solid var(--border);
+    box-shadow: 0 3px 8px rgba(0,0,0,0.04);
+    position: relative;
+    transition: all 0.3s;
+    animation: popBounce 0.35s ease-out;
+  }
+  .gm-word .vote-tag {
+    position: absolute;
+    top: -15px;
+    right: -10px;
+    background: var(--primary);
+    color: #fff;
+    font-size: 1rem;
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-weight: 900;
+    box-shadow: 0 3px 8px rgba(79,70,229,0.4);
+    animation: popBounce 0.3s ease-out;
+  }
+  .gm-word.revealed-wrong {
+    background: var(--danger-light);
+    border: 3px solid var(--danger);
+    color: var(--danger);
+    transform: scale(1.08);
+    animation: wiggle 0.45s ease-in-out;
+  }
+  .gm-no-error-box {
+    font-size: clamp(1.2rem, 2.3vh, 1.7rem);
+    font-weight: 800;
+    padding: 12px 26px;
+    border-radius: 14px;
+    background: #f1f5f9;
+    color: var(--muted);
+    border: 2px solid var(--border);
+  }
+  .gm-no-error-box.revealed-correct {
+    background: var(--teal-light);
+    border: 3px solid var(--teal);
+    color: var(--teal);
+    animation: popBounce 0.4s ease-out;
+  }
+  .gm-explanation-box {
+    background: var(--teal-light);
+    border-left: 6px solid var(--teal);
+    padding: 1.5vh 2vw;
+    border-radius: 12px;
+    font-size: clamp(1.2rem, 2.4vh, 1.75rem);
+    color: #064e3b;
+    animation: popBounce 0.35s ease-out;
+  }
+  .gm-controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .btn-lock { background: var(--danger); color: #fff; padding: 1.5vh 2.5vw; font-size: clamp(1.1rem, 2.2vh, 1.5rem); }
+  .btn-next-q { background: var(--teal); color: #fff; padding: 1.5vh 2.5vw; font-size: clamp(1.1rem, 2.2vh, 1.5rem); }
+
+  /* Stage 2: Fix the Bio */
+  .bio-original {
+    background: var(--accent-light);
+    border-left: 6px solid var(--accent);
+    padding: 1.6vh 2vw;
+    border-radius: 12px;
+    font-size: clamp(1.15rem, 2.2vh, 1.6rem);
+    line-height: 1.5;
+    color: #78350f;
+  }
+  .bio-submissions-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+    gap: 14px;
+    overflow-y: auto;
+    flex: 1;
+    padding-right: 6px;
+  }
+  .bio-card {
+    background: #f8fafc;
+    border: 2px solid var(--border);
+    border-radius: 14px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    animation: popBounce 0.35s ease-out;
+  }
+  .bio-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.95rem;
+    color: var(--primary);
+    font-weight: 800;
+  }
+  .bio-card-text {
+    font-size: 1.15rem;
+    line-height: 1.45;
+    color: var(--text);
+  }
+
+  /* Stage 3: Emoji Storyteller */
+  .emoji-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+    gap: 16px;
+    overflow-y: auto;
+    flex: 1;
+    align-content: start;
+  }
+  .emoji-card {
+    background: linear-gradient(180deg, #ffffff 0%, #eef2ff 100%);
+    border: 2px solid #c7d2fe;
+    border-radius: 18px;
+    padding: 22px;
+    text-align: center;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(79,70,229,0.08);
+    transition: transform 0.2s, border-color 0.2s;
+    animation: popBounce 0.4s ease-out;
+  }
+  .emoji-card:hover {
+    transform: translateY(-5px) scale(1.03);
+    border-color: var(--primary);
+  }
+  .emoji-big {
+    font-size: 3.8rem;
+    margin-bottom: 10px;
+    display: inline-block;
+    animation: floatEmoji 2.5s ease-in-out infinite;
+  }
+  .emoji-sender { font-size: 1.25rem; font-weight: 800; color: var(--primary); }
+
+  /* Spotlight Modal */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.7);
+    backdrop-filter: blur(6px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 200;
+    padding: 24px;
+  }
+  .spotlight-box {
+    background: #ffffff;
+    border: 5px solid var(--primary);
+    border-radius: 26px;
+    padding: 4vh 4vw;
+    max-width: 900px;
+    width: 100%;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    box-shadow: 0 25px 50px rgba(0,0,0,0.25);
+    animation: popBounce 0.35s ease-out;
+  }
+</style>
+</head>
+<body>
+
+<div class="gm-topbar">
+  <div class="brand-area">
+    <div class="status-dot" id="serverDot"></div>
+    <div>
+      <div class="brand-title">ECP Game Master • "How Have You Changed?"</div>
+      <div style="font-size:0.85rem; color:var(--muted); font-weight:600;" id="serverStatusText">Starting live room...</div>
+    </div>
+  </div>
+
+  <div class="stage-tabs">
+    <button class="tab-btn active" id="tab1" onclick="gmSwitchStage(1)">1. Grammar Crime (10)</button>
+    <button class="tab-btn" id="tab2" onclick="gmSwitchStage(2)">2. Fix the Bio</button>
+    <button class="tab-btn" id="tab3" onclick="gmSwitchStage(3)">3. Emoji Story</button>
+  </div>
+
+  <div class="player-badge">
+    <span id="gmPlayerCount">👥 0 Students</span>
+    <button style="background:#fff; color:var(--teal); padding:4px 8px; font-size:0.85rem;" onclick="playPopSound()" title="Test Audio">🔊</button>
+  </div>
+</div>
+
+<!-- STAGE 1 -->
+<div class="gm-main" id="gmStage1">
+  <div class="gm-s1-header">
+    <div class="gm-q-title" id="gmQNumber">QUESTION 1 OF 10 — Spot the Grammar Crime!</div>
+    <div class="sub-counter" id="gmSubCounter">📩 Submitted: 0 / 0</div>
+  </div>
+
+  <div class="gm-sentence-area" id="gmSentenceArea"></div>
+
+  <div style="display:flex; justify-content:center;">
+    <div class="gm-no-error-box" id="gmNoErrorBox">Option: "100% Correct / No Error"</div>
+  </div>
+
+  <div class="gm-explanation-box hidden" id="gmExplanationBox"></div>
+
+  <div class="gm-controls">
+    <button style="background:#e2e8f0; color:var(--text); padding:1.4vh 1.8vw;" onclick="gmPrevQuestion()">◀ Prev</button>
+    <div style="display:flex; gap:14px;">
+      <button class="btn-lock" id="btnLockReveal" onclick="gmLockAndReveal()">🔒 LOCK & REVEAL ANSWERS</button>
+      <button class="btn-next-q" id="btnNextQ" onclick="gmNextQuestion()">Next Question ▶</button>
+    </div>
+  </div>
+</div>
+
+<!-- STAGE 2 -->
+<div class="gm-main hidden" id="gmStage2">
+  <div class="gm-s1-header">
+    <div class="gm-q-title">STAGE 2: FIX THE BIO / CHAT! (Find & Fix 5 Mistakes)</div>
+    <div style="display:flex; gap:12px; align-items:center;">
+      <button style="background:#e2e8f0; color:var(--text); padding:0.9vh 1.2vw;" id="toggleAnonBtn" onclick="toggleBioNames()">👁️ Names: HIDDEN</button>
+      <button style="background:var(--teal); color:#fff; padding:0.9vh 1.2vw;" onclick="showBioAnswerKey()">✅ Answer Key</button>
+      <div class="sub-counter" id="gmBioCounter">📩 Received: 0 / 0</div>
+    </div>
+  </div>
+
+  <div class="bio-original">
+    <strong>Original Text on Student Phones:</strong><br>
+    "Hi guys! Long time no see. My life has changed a lot! First, I have start a new job in 2025. I also have lose weight for 4 kilograms because I go to the gym last month. Now, I am more busier, but I am more happy than before!"
+  </div>
+
+  <div class="bio-submissions-grid" id="gmBioGrid">
+    <div style="color:var(--muted); font-size:1.2rem;">Waiting for students to submit their edited bio...</div>
+  </div>
+</div>
+
+<!-- STAGE 3 -->
+<div class="gm-main hidden" id="gmStage3">
+  <div class="gm-s1-header">
+    <div class="gm-q-title">STAGE 3: EMOJI STORYTELLER — Click a card to Spotlight & Speak!</div>
+    <div class="sub-counter" id="gmEmojiCounter">🎭 Emojis: 0 / 0</div>
+  </div>
+
+  <div class="emoji-grid" id="gmEmojiGrid">
+    <div style="color:var(--muted); font-size:1.2rem;">Students are sending 1–3 emojis representing how they have changed...</div>
+  </div>
+</div>
+
+<!-- Spotlight Modal -->
+<div class="modal-overlay hidden" id="spotlightModal" onclick="closeSpotlight()">
+  <div class="spotlight-box" onclick="event.stopPropagation()">
+    <div id="spotlightContent"></div>
+    <button style="background:var(--primary); color:#fff; padding:14px 32px; font-size:1.2rem; align-self:center;" onclick="closeSpotlight()">Close Spotlight</button>
+  </div>
+</div>
+
+<script>
+  // FIXED ROOM ID (Must match student.html)
+  const FIXED_ROOM_ID = "ECP-LIVE-CLASSROOM-2026";
+
+  const questions = [
+    {
+      words: ["I", "have", "grown", "my", "bread", "for", "two", "months."],
+      wrongIndex: 4,
+      explanation: '❌ <strong>"bread"</strong> (roti) should be <strong>"beard"</strong> (jenggot)! → <em>"I have grown my beard."</em>'
+    },
+    {
+      words: ["I", "have", "moved", "to", "a", "new", "kos", "last", "month."],
+      wrongIndex: 1,
+      explanation: '❌ Remove <strong>"have"</strong>! With <em>"last month"</em>, use Simple Past: <em>"I moved to a new kos last month."</em>'
+    },
+    {
+      words: ["Now,", "I", "am", "more", "healthier", "than", "before."],
+      wrongIndex: 3,
+      explanation: '❌ Remove <strong>"more"</strong>! Never use <em>more + -er</em> together → <em>"I am healthier than before."</em>'
+    },
+    {
+      words: ["I", "have", "buy", "a", "new", "motorcycle."],
+      wrongIndex: 2,
+      explanation: '❌ <strong>"buy"</strong> should be Verb 3: <strong>"bought"</strong>! → <em>"I have bought a new motorcycle."</em>'
+    },
+    {
+      words: ["I", "meet", "someone", "special", "two", "weeks", "ago."],
+      wrongIndex: 1,
+      explanation: '❌ <strong>"meet"</strong> should be Verb 2: <strong>"met"</strong> (because of <em>"two weeks ago"</em>).'
+    },
+    {
+      words: ["I", "am", "more", "patient", "and", "more", "disciplined", "than", "before."],
+      wrongIndex: -1,
+      explanation: '✅ <strong>100% Correct!</strong> Long adjectives (<em>patient, disciplined</em>) use <strong>more</strong>.'
+    },
+    {
+      words: ["I", "have", "lose", "weight", "for", "about", "5", "kilograms."],
+      wrongIndex: 2,
+      explanation: '❌ <strong>"lose"</strong> should be Verb 3: <strong>"lost"</strong>! → <em>"I have lost weight..."</em>'
+    },
+    {
+      words: ["I", "started", "a", "new", "job", "in", "2025."],
+      wrongIndex: -1,
+      explanation: '✅ <strong>100% Correct!</strong> Specific past time (<em>in 2025</em>) uses Simple Past (<em>started</em>).'
+    },
+    {
+      words: ["I", "am", "stronger", "and", "more", "confident", "than", "before."],
+      wrongIndex: -1,
+      explanation: '✅ <strong>100% Correct!</strong> Short adjective uses <em>-er</em> (<em>stronger</em>), long adjective uses <em>more</em> (<em>more confident</em>).'
+    },
+    {
+      words: ["I", "have", "save", "more", "money", "this", "year."],
+      wrongIndex: 2,
+      explanation: '❌ <strong>"save"</strong> should be Verb 3: <strong>"saved"</strong>! → <em>"I have saved more money this year."</em>'
+    }
+  ];
+
+  let peer = null;
+  let connections = {};
+  let currentStage = 1;
+  let currentQIndex = 0;
+  let isQLocked = false;
+  let s1Answers = {};
+  let s2Bios = {};
+  let s3Emojis = {};
+  let showBioNamesFlag = false;
+  let audioCtx = null;
+
+  // Web Audio Sound Effects
+  function ensureAudio() {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+  }
+
+  function playPopSound() {
+    ensureAudio();
+    const now = audioCtx.currentTime;
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(520, now);
+    osc.frequency.exponentialRampToValueAtTime(880, now + 0.09);
+    gain.gain.setValueAtTime(0.2, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.start(now);
+    osc.stop(now + 0.13);
+  }
+
+  function playRevealFanfare() {
+    ensureAudio();
+    const now = audioCtx.currentTime;
+    [523.25, 659.25, 783.99, 1046.5].forEach((freq, i) => {
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(freq, now + i * 0.08);
+      gain.gain.setValueAtTime(0.22, now + i * 0.08);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.08 + 0.45);
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.start(now + i * 0.08);
+      osc.stop(now + i * 0.08 + 0.5);
+    });
+  }
+
+  // Auto-init GM on page load
+  window.addEventListener('DOMContentLoaded', () => {
+    gmRenderStage1();
+    peer = new Peer(FIXED_ROOM_ID);
+
+    peer.on('open', () => {
+      document.getElementById('serverDot').classList.add('online');
+      document.getElementById('serverStatusText').textContent = "Live & Ready — Students can join anytime!";
+    });
+
+    peer.on('error', (err) => {
+      document.getElementById('serverStatusText').textContent = "⚠️ Room ID busy (close other GM tabs & refresh).";
+    });
+
+    peer.on('connection', (conn) => {
+      conn.on('data', (data) => {
+        if (data.type === 'JOIN') {
+          connections[conn.peer] = { conn, name: data.name };
+          playPopSound();
+          updatePlayerCount();
+          conn.send({
+            type: 'SYNC_STATE',
+            stage: currentStage,
+            qIndex: currentQIndex,
+            locked: isQLocked
+          });
+        } else if (data.type === 'S1_ANSWER') {
+          if (!isQLocked && data.qIndex === currentQIndex) {
+            if (!s1Answers[currentQIndex]) s1Answers[currentQIndex] = {};
+            if (!s1Answers[currentQIndex][conn.peer]) {
+              s1Answers[currentQIndex][conn.peer] = {
+                name: connections[conn.peer]?.name || "Student",
+                choice: data.choice
+              };
+              playPopSound();
+              gmUpdateS1Counter();
+            }
+          }
+        } else if (data.type === 'S2_BIO') {
+          s2Bios[conn.peer] = {
+            name: connections[conn.peer]?.name || "Student",
+            text: data.text
+          };
+          playPopSound();
+          gmRenderBios();
+        } else if (data.type === 'S3_EMOJI') {
+          s3Emojis[conn.peer] = {
+            name: connections[conn.peer]?.name || "Student",
+            emoji: data.emoji
+          };
+          playPopSound();
+          gmRenderEmojis();
+        }
+      });
+
+      conn.on('close', () => {
+        delete connections[conn.peer];
+        updatePlayerCount();
+      });
+    });
+  });
+
+  function broadcastToStudents(payload) {
+    Object.values(connections).forEach(({ conn }) => {
+      if (conn.open) conn.send(payload);
+    });
+  }
+
+  function updatePlayerCount() {
+    const count = Object.keys(connections).length;
+    document.getElementById('gmPlayerCount').textContent = `👥 ${count} Student${count === 1 ? '' : 's'}`;
+    gmUpdateS1Counter();
+    gmRenderBios();
+    gmRenderEmojis();
+  }
+
+  function gmSwitchStage(stageNum) {
+    currentStage = stageNum;
+    [1, 2, 3].forEach(n => {
+      document.getElementById(`tab${n}`).classList.toggle('active', n === stageNum);
+      document.getElementById(`gmStage${n}`).classList.toggle('hidden', n !== stageNum);
+    });
+    broadcastToStudents({
+      type: 'SYNC_STATE',
+      stage: currentStage,
+      qIndex: currentQIndex,
+      locked: isQLocked
+    });
+  }
+
+  function gmRenderStage1() {
+    const q = questions[currentQIndex];
+    document.getElementById('gmQNumber').textContent = `QUESTION ${currentQIndex + 1} OF ${questions.length} — Spot the Grammar Crime!`;
+    const area = document.getElementById('gmSentenceArea');
+    area.innerHTML = '';
+
+    const answersForQ = s1Answers[currentQIndex] || {};
+    const voteCounts = {};
+    let noErrorVotes = 0;
+
+    Object.values(answersForQ).forEach(ans => {
+      if (ans.choice === 'NO_ERROR') noErrorVotes++;
+      else voteCounts[ans.choice] = (voteCounts[ans.choice] || 0) + 1;
+    });
+
+    q.words.forEach((word, idx) => {
+      const span = document.createElement('span');
+      span.className = 'gm-word';
+      span.textContent = word;
+
+      if (isQLocked) {
+        if (idx === q.wrongIndex) span.classList.add('revealed-wrong');
+        if (voteCounts[idx]) {
+          const tag = document.createElement('span');
+          tag.className = 'vote-tag';
+          tag.textContent = `${voteCounts[idx]}👤`;
+          span.appendChild(tag);
+        }
+      }
+      area.appendChild(span);
+    });
+
+    const noErrBox = document.getElementById('gmNoErrorBox');
+    noErrBox.className = 'gm-no-error-box';
+    if (isQLocked) {
+      noErrBox.textContent = `Option: "100% Correct" (${noErrorVotes} votes)`;
+      if (q.wrongIndex === -1) noErrBox.classList.add('revealed-correct');
+    } else {
+      noErrBox.textContent = `Option: "100% Correct / No Error"`;
+    }
+
+    const expBox = document.getElementById('gmExplanationBox');
+    if (isQLocked) {
+      expBox.innerHTML = q.explanation;
+      expBox.classList.remove('hidden');
+    } else {
+      expBox.classList.add('hidden');
+    }
+
+    document.getElementById('btnLockReveal').disabled = isQLocked;
+    gmUpdateS1Counter();
+  }
+
+  function gmUpdateS1Counter() {
+    const totalStudents = Object.keys(connections).length;
+    const submitted = Object.keys(s1Answers[currentQIndex] || {}).length;
+    document.getElementById('gmSubCounter').textContent = `📩 Submitted: ${submitted} / ${totalStudents}`;
+  }
+
+  function gmLockAndReveal() {
+    isQLocked = true;
+    playRevealFanfare();
+    broadcastToStudents({
+      type: 'SYNC_STATE',
+      stage: currentStage,
+      qIndex: currentQIndex,
+      locked: true
+    });
+    gmRenderStage1();
+  }
+
+  function gmNextQuestion() {
+    if (currentQIndex < questions.length - 1) {
+      currentQIndex++;
+      isQLocked = false;
+      broadcastToStudents({
+        type: 'SYNC_STATE',
+        stage: currentStage,
+        qIndex: currentQIndex,
+        locked: false
+      });
+      gmRenderStage1();
+    }
+  }
+
+  function gmPrevQuestion() {
+    if (currentQIndex > 0) {
+      currentQIndex--;
+      isQLocked = false;
+      broadcastToStudents({
+        type: 'SYNC_STATE',
+        stage: currentStage,
+        qIndex: currentQIndex,
+        locked: false
+      });
+      gmRenderStage1();
+    }
+  }
+
+  function toggleBioNames() {
+    showBioNamesFlag = !showBioNamesFlag;
+    document.getElementById('toggleAnonBtn').textContent = showBioNamesFlag ? "👁️ Names: VISIBLE" : "👁️ Names: HIDDEN";
+    gmRenderBios();
+  }
+
+  function gmRenderBios() {
+    const total = Object.keys(connections).length;
+    const entries = Object.entries(s2Bios);
+    document.getElementById('gmBioCounter').textContent = `📩 Received: ${entries.length} / ${total}`;
+    const grid = document.getElementById('gmBioGrid');
+    if (entries.length === 0) return;
+
+    grid.innerHTML = '';
+    entries.forEach(([id, item], idx) => {
+      const card = document.createElement('div');
+      card.className = 'bio-card';
+      const label = showBioNamesFlag ? `👤 ${item.name}` : `🕵️ Student #${idx + 1}`;
+      card.innerHTML = `
+        <div class="bio-card-header">
+          <span>${label}</span>
+          <button style="background:var(--primary); color:#fff; padding:5px 12px; font-size:0.85rem;" onclick="spotlightBio('${id}', ${idx})">🔍 Zoom</button>
+        </div>
+        <div class="bio-card-text">${escapeHTML(item.text)}</div>
+      `;
+      grid.appendChild(card);
+    });
+  }
+
+  function spotlightBio(peerId, idx) {
+    const item = s2Bios[peerId];
+    if (!item) return;
+    playPopSound();
+    const title = showBioNamesFlag ? `👤 ${item.name}'s Revision` : `🕵️ Anonymous Student #${idx + 1}`;
+    document.getElementById('spotlightContent').innerHTML = `
+      <h2 style="color:var(--primary); font-size:1.9rem;">${title}</h2>
+      <p style="font-size:1.75rem; line-height:1.6; text-align:left; background:#f8fafc; border:2px solid #e2e8f0; padding:24px; border-radius:16px;">
+        ${escapeHTML(item.text)}
+      </p>
+    `;
+    document.getElementById('spotlightModal').classList.remove('hidden');
+  }
+
+  function showBioAnswerKey() {
+    playRevealFanfare();
+    document.getElementById('spotlightContent').innerHTML = `
+      <h2 style="color:var(--teal); font-size:2rem;">✅ Answer Key (5 Corrections)</h2>
+      <p style="font-size:1.6rem; line-height:1.6; text-align:left; background:#ecfdf5; border:2px solid #a7f3d0; padding:24px; border-radius:16px; color:#064e3b;">
+        "Hi guys! Long time no see. My life has changed a lot! First, I <strong style="background:#fef08a; padding:0 4px;">started</strong> a new job in 2025. I also have <strong style="background:#fef08a; padding:0 4px;">lost</strong> weight for 4 kilograms because I <strong style="background:#fef08a; padding:0 4px;">went</strong> to the gym last month. Now, I am <strong style="background:#fef08a; padding:0 4px;">busier</strong>, but I am <strong style="background:#fef08a; padding:0 4px;">happier</strong> than before!"
+      </p>
+    `;
+    document.getElementById('spotlightModal').classList.remove('hidden');
+  }
+
+  function gmRenderEmojis() {
+    const total = Object.keys(connections).length;
+    const entries = Object.entries(s3Emojis);
+    document.getElementById('gmEmojiCounter').textContent = `🎭 Emojis: ${entries.length} / ${total}`;
+    const grid = document.getElementById('gmEmojiGrid');
+    if (entries.length === 0) return;
+
+    grid.innerHTML = '';
+    entries.forEach(([id, item]) => {
+      const card = document.createElement('div');
+      card.className = 'emoji-card';
+      card.onclick = () => spotlightEmoji(id);
+      card.innerHTML = `
+        <div class="emoji-big">${escapeHTML(item.emoji)}</div>
+        <div class="emoji-sender">${escapeHTML(item.name)}</div>
+      `;
+      grid.appendChild(card);
+    });
+  }
+
+  function spotlightEmoji(peerId) {
+    const item = s3Emojis[peerId];
+    if (!item) return;
+    playRevealFanfare();
+    document.getElementById('spotlightContent').innerHTML = `
+      <div style="font-size:7rem; animation: floatEmoji 2s infinite;">${escapeHTML(item.emoji)}</div>
+      <h2 style="font-size:2.6rem; color:var(--primary);">${escapeHTML(item.name)}'s Story</h2>
+      <p style="font-size:1.45rem; color:var(--muted);">Tell the class: <strong>"How have you changed?"</strong><br>(Use Present Perfect, Simple Past, & Comparative!)</p>
+    `;
+    document.getElementById('spotlightModal').classList.remove('hidden');
+  }
+
+  function closeSpotlight() {
+    document.getElementById('spotlightModal').classList.add('hidden');
+  }
+
+  function escapeHTML(str) {
+    return str.replace(/[&<>"']/g, m => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[m]));
+  }
+</script>
+</body>
+</html>
